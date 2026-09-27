@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CASE 05 - 나도 모르게 털린 비밀 프로필</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Pretendard', "Noto Sans KR", "Malgun Gothic", sans-serif;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08), transparent 30%),
+        radial-gradient(circle at 85% 85%, rgba(0, 210, 255, 0.08), transparent 30%),
+        #090d16;
+      color: #e9f3ff;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 30px 20px 80px;
+    }
+
+    /* Top Navigation Bar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      border-bottom: 1px solid #22334a;
+      padding-bottom: 18px;
+      margin-bottom: 25px;
+    }
+
+    .case-title {
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+    }
+
+    .case-title span {
+      color: #10b981;
+      margin-right: 6px;
+    }
+
+    .back-btn {
+      border: 1px solid #486588;
+      background: #111a29;
+      color: #dcecff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: #1c2b42;
+      border-color: #00e5ff;
+    }
+
+    /* Standard Card Unit */
+    .card {
+      background: rgba(15, 23, 38, 0.95);
+      border: 1px solid #283a54;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .case-badge {
+      color: #10b981;
+      font-weight: 900;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .main-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 15px;
+      line-height: 1.35;
+    }
+
+    .briefing-text {
+      font-size: 1.05rem;
+      color: #cbd7e8;
+      line-height: 1.8;
+    }
+
+    /* Visual Split: Chat Log vs Leaked Dossier */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 720px) {
+      .showcase-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left: Innocent Chat Log */
+    .chat-card {
+      background: #0d1624;
+      border: 1.5px solid #283d5a;
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .box-header {
+      font-size: 0.88rem;
+      font-weight: bold;
+      color: #38bdf8;
+      border-bottom: 1px solid #1e2e45;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-bubble-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 10px;
+      line-height: 1.5;
+      max-width: 92%;
+    }
+
+    .bubble-user {
+      align-self: flex-end;
+      background: #047857;
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+
+    .bubble-ai {
+      align-self: flex-start;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-bottom-left-radius: 2px;
+    }
+
+    .photo-preview-box {
+      background: #070c14;
+      border: 1px dashed #344d6d;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    /* Right: Assembled Secret Dossier */
+    .dossier-card {
+      background: #110e1c;
+      border: 2px solid #ef4444;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .dossier-stamp {
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .profile-intel-box {
+      background: #0a0612;
+      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid #3b1d28;
+      margin-bottom: 10px;
+    }
+
+    .intel-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      padding: 6px 0;
+      border-bottom: 1px dashed #2d1622;
+    }
+
+    .intel-label {
+      color: #fca5a5;
+      font-weight: bold;
+    }
+
+    .intel-val {
+      color: #fecdd3;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .leak-warning-note {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      color: #fca5a5;
+      line-height: 1.5;
+    }
+
+    /* Decision Section (Judgment Engine) */
+    .decision-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .choice-btn {
+      width: 100%;
+      text-align: left;
+      padding: 18px 20px;
+      background: #111a28;
+      border: 1.5px solid #2d4260;
+      border-radius: 12px;
+      color: #e8f2fe;
+      font-size: 1.02rem;
+      line-height: 1.6;
+      transition: all 0.2s ease;
+    }
+
+    .choice-btn:hover {
+      border-color: #10b981;
+      background: #122822;
+      transform: translateX(4px);
+    }
+
+    .choice-num {
+      color: #10b981;
+      font-weight: 900;
+      margin-right: 8px;
+    }
+
+    .decision-feedback {
+      margin-top: 18px;
+      font-size: 0.98rem;
+      line-height: 1.75;
+      display: none;
+    }
+
+    /* Evidence Room (Investigate Section) */
+    .investigation-zone {
+      display: none;
+    }
+
+    .investigation-zone.show {
+      display: block;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .progress-wrap {
+      margin: 20px 0 25px;
+      background: #0d1624;
+      border: 1px solid #223348;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .progress-bar-track {
+      height: 12px;
+      background: #152234;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width 0.4s ease;
+    }
+
+    .progress-status {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #8da2be;
+      font-weight: bold;
+    }
+
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 15px;
+    }
+
+    @media (max-width: 720px) {
+      .evidence-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .evidence-card {
+      background: #0f1826;
+      border: 1.5px solid #283c57;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .evidence-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .evidence-icon {
+      font-size: 1.7rem;
+    }
+
+    .evidence-card h3 {
+      font-size: 1.1rem;
+      color: #ffffff;
+    }
+
+    .evidence-card p {
+      font-size: 0.92rem;
+      color: #9bb0cb;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .inspect-btn {
+      width: 100%;
+      padding: 12px;
+      background: #132420;
+      color: #e2f0ff;
+      border: 1px solid #225a49;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .inspect-btn:hover {
+      border-color: #10b981;
+      background: #1a382f;
+    }
+
+    .inspect-btn:disabled {
+      background: #131c28;
+      border-color: #243547;
+      color: #647a94;
+      cursor: not-allowed;
+    }
+
+    .evidence-result {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border-left: 3px solid #10b981;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: #d9e8fb;
+    }
+
+    .evidence-result.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Final Password Section */
+    .password-section {
+      display: none;
+      text-align: center;
+    }
+
+    .password-section.show {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .password-input {
+      width: 100%;
+      max-width: 320px;
+      margin: 15px auto 12px;
+      padding: 14px 20px;
+      font-size: 1.3rem;
+      text-align: center;
+      letter-spacing: 8px;
+      background: #090f19;
+      border: 2px solid #354d6f;
+      border-radius: 10px;
+      color: #ffd700;
+      font-weight: 900;
+      outline: none;
+      display: block;
+    }
+
+    .password-input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .action-btn {
+      width: 100%;
+      max-width: 320px;
+      padding: 14px 20px;
+      background: #10b981;
+      color: #04101a;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: #34d399;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .password-feedback-msg {
+      margin-top: 14px;
+      min-height: 24px;
+      font-size: 0.95rem;
+      font-weight: bold;
+    }
+
+    /* Solved Success Box */
+    .success-box {
+      display: none;
+      text-align: center;
+      padding: 35px 25px;
+      background: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 38, 0.95) 70%);
+      border: 2px solid #10b981;
+    }
+
+    .success-box.show {
+      display: block;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .coin-display {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #ffd700;
+      margin: 15px 0 10px;
+      text-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- Top Navigation Bar -->
+    <div class="topbar">
+      <div class="case-title">
+        <span>CASE 05</span> 데이터 프라이버시 미스터리
+      </div>
+      <button class="back-btn" onclick="goMap()">
+        🏫 학교 맵으로 나가기
+      </button>
+    </div>
+
+    <!-- 1. Incident Briefing -->
+    <section class="card">
+      <div class="case-badge">CASE FILE 05</div>
+      <h1 class="main-title">나도 모르게 털린 비밀 프로필</h1>
+      <p class="briefing-text">
+        나공유 학생은 새로 출시된 AI 챗봇 '도란이'와 대화하며 일상 사진과 수다, 고민을 스스럼없이 나누었습니다.<br>
+        그런데 며칠 뒤, 다른 친구가 챗봇에게 질문하자 도란이가 <strong>나공유의 아파트 이름과 현관 비밀번호, 학교와 학원 동선까지</strong> 줄줄 답변해 버리는 사태가 일어났습니다!<br><br>
+        나공유는 주소를 직접 말한 적이 없다고 펄쩍 뜁니다. 도대체 AI는 어떻게 나공유의 모든 신상을 꿰뚫어 보았을까요?
+      </p>
+    </section>
+
+    <!-- 2. Visual Split: Chat Log vs Leaked Dossier -->
+    <section class="card">
+      <h2 style="font-size: 1.25rem; color: #ffffff; margin-bottom: 6px;">💬 나공유의 챗봇 대화 vs AI가 조합한 비밀 프로필</h2>
+      <p style="color: #cbd7e8; font-size: 0.95rem; margin-bottom: 12px;">
+        사소하게 주고받은 일상 조각들이 AI 서버에서 어떻게 하나의 거대한 개인정보로 완성되었는지 비교해 보세요.
+      </p>
+
+      <div class="showcase-grid">
+        
+        <!-- Left: Innocent Chat Log -->
+        <div class="chat-card">
+          <div>
+            <div class="box-header">
+              <span>📱 나공유와 AI 도란이의 비밀 대화</span>
+              <span style="color:#10b981; font-size:0.75rem;">[실제 전송 내역]</span>
+            </div>
+
+            <div class="chat-bubble-wrap">
+              <div class="chat-bubble bubble-user">
+                "도란아! 오늘 우리 아파트 놀이터에서 강아지랑 찍은 사진이야. 귀엽지?"
+                <div class="photo-preview-box">
+                  📷 [사진 1장 전송됨]<br>
+                  - 배경: 아파트 104동 간판 & 놀이터 표지판<br>
+                  - 목걸이: '해피 / 보호자 010-XXXX-XXXX'
+                </div>
+              </div>
+
+              <div class="chat-bubble bubble-user">
+                "엄마가 자꾸 현관 비번 까먹어서 내가 외우는 중 ㅋㅋ 우리 집 비번은 1004#이야."
+              </div>
+
+              <div class="chat-bubble bubble-user">
+                "매일 4시에 해솔초 끝나고 바로 앞 튼튼태권도 가기 너무 귀찮다 ㅠㅠ"
+              </div>
+
+              <div class="chat-bubble bubble-ai">
+                "도란이에게 소중한 일상을 나눠줘서 고마워! 네 이야기는 내 기억 창고에 잘 저장해둘게."
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Leaked Dossier -->
+        <div class="dossier-card">
+          <div>
+            <div class="box-header" style="color:#ef4444;">
+              <span>🗂️ AI 서버가 완성한 나공유 신상 명세서</span>
+              <span class="dossier-stamp">LEAKED</span>
+            </div>
+
+            <div class="profile-intel-box">
+              <div class="intel-row">
+                <span class="intel-label">대상자</span>
+                <span class="intel-val">나공유 (해솔초 6학년)</span>
+              </div>
+              <div class="intel-row">
+                <span class="intel-label">거주지</span>
+                <span class="intel-val">푸른숲마을 아이파크 104동</span>
+              </div>
+              <div class="intel-row">
+                <span class="intel-label">현관 보안코드</span>
+                <span class="intel-val" style="color:#f87171;">1004# (출입 가능)</span>
+              </div>
+              <div class="intel-row">
+                <span class="intel-label">매일 이동 동선</span>
+                <span class="intel-val">16:00 해솔초 ➔ 튼튼태권도</span>
+              </div>
+              <div class="intel-row">
+                <span class="intel-label">가족 연락처</span>
+                <span class="intel-val">010-XXXX-5678 (모친)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="leak-warning-note">
+            <strong>⚠️ 제3자 유출 확인:</strong> 다른 학생이 "초등학생 현관 비밀번호 패턴 알려줘"라고 묻자, AI가 이 데이터를 학습용 예시로 그대로 인용하여 답변함!
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. Decision Point (Judgment Engine) -->
+    <section class="card" id="decisionSection">
+      <h2 style="font-size: 1.25rem; color: #ffd700; margin-bottom: 8px;">🧭 첫 번째 판단</h2>
+      <p style="color: #cbd7e8; font-size: 1rem;">
+        나공유는 "AI랑 단둘이 나눈 비밀 대화인데 대체 왜 밖으로 새어 나간 거냐"며 억울해합니다. 수사관인 당신은 이 상황을 어떻게 판단하겠습니까?
+      </p>
+
+      <div class="decision-options">
+        <button class="choice-btn" onclick="makeDecision(1)">
+          <span class="choice-num">①</span> "도란이 서버가 해킹당한 게 분명하므로 경찰청 사이버 수사대에 해킹 신고를 한다."
+        </button>
+        <button class="choice-btn" onclick="makeDecision(2)">
+          <span class="choice-num">②</span> "AI에게 '방금 말한 정보 다 잊어버려'라고 타이핑해서 삭제 요청을 남기면 해결된다."
+        </button>
+        <button class="choice-btn" onclick="makeDecision(3)">
+          <span class="choice-num">③</span> "AI에 입력한 대화와 사진이 서비스 서버에 저장되고 학습 데이터로 재활용되는 원리를 파헤친다."
+        </button>
+      </div>
+
+      <div class="decision-feedback" id="decisionFeedback"></div>
+    </section>
+
+    <!-- 4. Evidence Room (Investigate Section) -->
+    <section class="card investigation-zone" id="investigation">
+      <div class="case-badge">PRIVACY INVESTIGATION ROOM</div>
+      <h2 style="font-size: 1.3rem; color: #ffffff; margin-bottom: 6px;">🕵️ 데이터 프라이버시 감식실</h2>
+      <p style="color: #cbd7e8; font-size: 0.98rem;">
+        사소한 일상 조각이 어떻게 위험한 개인정보 유출로 이어졌는지 <strong>4가지 단서를 직접 확인하세요.</strong>
+      </p>
+
+      <!-- Progress Bar -->
+      <div class="progress-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-status">
+          <span>프라이버시 감식 현황</span>
+          <span id="progressText" style="color: #10b981;">조사한 단서 0 / 4</span>
+        </div>
+      </div>
+
+      <!-- 4 Evidence Cards -->
+      <div class="evidence-grid">
+        
+        <!-- Evidence 1: Photo Metadata & Background -->
+        <div class="evidence-card">
+          <div>
+            <div class="evidence-top">
+              <span class="evidence-icon">📸</span>
+              <h3>단서 ① 사진 속 숨은 단서 분석</h3>
+            </div>
+            <p>나공유가 올린 강아지 사진 1장의 배경과 위치 데이터(EXIF)를 정밀 스캔합니다.</p>
+          </div>
+          <div>
+            <button class="inspect-btn" onclick="investigate(1)">🔍 사진 데이터 정밀 스캔</button>
+            <div class="evidence-result" id="evidence1">
+              <strong>[스캔 결과: 3가지 핵심 정보 추출]</strong><br>
+              배경의 아파트 동 번호, 놀이터 명칭, 강아지 목걸이의 전화번호까지 AI 컴퓨터 비전 모델이 순식간에 텍스트로 읽어냈습니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence 2: Terms of Service -->
+        <div class="evidence-card">
+          <div>
+            <div class="evidence-top">
+              <span class="evidence-icon">📜</span>
+              <h3>단서 ② 이용약관 숨은 조항 확인</h3>
+            </div>
+            <p>나공유가 앱을 설치할 때 무심코 [전체 동의]를 누른 약관 전문을 검색합니다.</p>
+          </div>
+          <div>
+            <button class="inspect-btn" onclick="investigate(2)">🔍 이용약관 약관문 조회</button>
+            <div class="evidence-result" id="evidence2">
+              <strong>[발견된 조항: 'AI 모델 고도화 학습 활용']</strong><br>
+              "사용자가 입력한 텍스트, 이미지 등 일체의 데이터는 AI 모델 재학습에 사용될 수 있습니다." <strong>내 사생활이 다른 사람의 답변 재료가 된 것입니다.</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence 3: Data Profiling Puzzle -->
+        <div class="evidence-card">
+          <div>
+            <div class="evidence-top">
+              <span class="evidence-icon">🧩</span>
+              <h3>단서 ③ 데이터 프로파일링(조각 맞추기)</h3>
+            </div>
+            <p>서로 다른 날짜에 나눈 사소한 대화 3토막이 어떻게 결합되었는지 추적합니다.</p>
+          </div>
+          <div>
+            <button class="inspect-btn" onclick="investigate(3)">🔍 정보 결합 알고리즘 추적</button>
+            <div class="evidence-result" id="evidence3">
+              <strong>[추적 결과: 완벽한 신상 털기 완성]</strong><br>
+              "초등학교 이름 + 하교 시간 + 아파트 동호수 + 현관 비밀번호"라는 흩어진 퍼즐 조각을 AI가 한 사람의 프로필로 완벽히 묶어냈습니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence 4: Golden Rules for AI Privacy -->
+        <div class="evidence-card">
+          <div>
+            <div class="evidence-top">
+              <span class="evidence-icon">🛡️</span>
+              <h3>단서 ④ AI 개인정보 보호 3원칙</h3>
+            </div>
+            <p>AI 서비스를 안전하게 이용하기 위해 사용자가 지켜야 할 입력 수칙을 도출합니다.</p>
+          </div>
+          <div>
+            <button class="inspect-btn" onclick="investigate(4)">🔍 개인정보 보호 수칙 도출</button>
+            <div class="evidence-result" id="evidence4">
+              <strong>[도출 결과: 필터링과 비식별화]</strong><br>
+              ① 이름, 주소, 비번 등 민감 정보는 <strong>AI 입력창에 절대 금지!</strong><br>
+              ② 사진을 올릴 때는 <strong>명찰, 차량 번호판, 집 배경을 가리기!</strong><br>
+              ③ AI 설정에서 <strong>'학습 데이터 활용 거부(Opt-out)'</strong> 설정하기!
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 5. Password Authentication Section (Auto-shown when 4/4 complete) -->
+    <section class="card password-section" id="passwordArea">
+      <div class="case-badge">FINAL AUTHENTICATION</div>
+      <h2 style="font-size: 1.3rem; color: #ffd700; margin-bottom: 8px;">🔐 CASE 05 최종 수사 암호 입력</h2>
+      <p style="color: #cbd7e8; font-size: 0.98rem; margin-bottom: 10px;">
+        종이 활동지를 해결하여 완성한 <strong>2글자 핵심 암호</strong>를 입력하세요.
+      </p>
+
+      <input
+        type="text"
+        id="passwordInput"
+        class="password-input"
+        maxlength="4"
+        placeholder="암호 입력"
+        autocomplete="off"
+      >
+
+      <button class="action-btn" onclick="checkPassword()">
+        암호 검증 및 사건 종결
+      </button>
+
+      <div class="password-feedback-msg" id="passwordMessage"></div>
+    </section>
+
+    <!-- 6. Solved Success Screen -->
+    <section class="card success-box" id="success">
+      <div class="case-badge">CASE 05 SOLVED</div>
+      <h2 style="font-size: 1.8rem; color: #10b981; margin-bottom: 8px;">🎉 사건 05 완전 해결!</h2>
+      <p style="color: #cbd7e8; font-size: 1.05rem;">
+        무심코 입력한 데이터가 AI 학습을 통해 유출될 수 있음을 밝혀내고 프라이버시를 지켜냈습니다!
+      </p>
+
+      <div class="coin-display" id="coinText">+0 ALP</div>
+
+      <p style="color: #8da2be; font-size: 0.95rem; margin-bottom: 25px;">
+        편리한 AI 기술을 누릴 때도 나의 소중한 사생활과 개인정보는 내가 스스로 <strong>'보호'</strong>해야 합니다.
+      </p>
+
+      <button class="action-btn" style="max-width: 260px;" onclick="goMap()">
+        🏫 학교 맵으로 돌아가기 (마지막 CASE 06 해금 확인)
+      </button>
+    </section>
+
+  </div>
+
+  <script>
+    /* 암호 키워드 설정: 보호 */
+    const CASE_PASSWORD = "보호";
+
+    /* 증거 조사 상태 추적 */
+    let investigated = [false, false, false, false];
+
+    /* 1. 첫 번째 판단 분기 */
+    function makeDecision(choice) {
+      const feedback = document.getElementById("decisionFeedback");
+      feedback.style.display = "block";
+
+      if (choice === 1) {
+        feedback.innerHTML = `
+          <div style="padding: 16px; background: rgba(239, 68, 68, 0.12); border: 1.5px solid #ef4444; border-radius: 10px; color: #fca5a5;">
+            ❌ <strong>판단 오류:</strong> 해커가 침입한 것이 아닙니다. 서비스 약관에 따라 사용자가 직접 올린 대화를 AI가 스스로 학습하고 답변에 인용한 것입니다!
+          </div>
+        `;
+      } else if (choice === 2) {
+        feedback.innerHTML = `
+          <div style="padding: 16px; background: rgba(245, 158, 11, 0.12); border: 1.5px solid #f59e0b; border-radius: 10px; color: #fcd34d;">
+            ⚠️ <strong>단순한 착각:</strong> 챗봇 대화창에 "잊어버려"라고 친다고 해서 서버에 이미 저장되고 모델 가중치에 학습된 데이터가 즉시 지워지지 않습니다.
+          </div>
+        `;
+      } else if (choice === 3) {
+        feedback.innerHTML = `
+          <div style="padding: 16px; background: rgba(16, 185, 129, 0.15); border: 1.5px solid #10b981; border-radius: 10px; color: #86efac;">
+            ✅ <strong>탁월한 판단!</strong> 내가 무심코 올린 대화와 사진이 어떻게 AI 두뇌에 저장되고 다른 사람에게 노출되는지 데이터 경로를 정밀 감식합니다.<br>
+            <strong>아래 감식실에서 4가지 단서를 하나씩 파헤쳐 보세요!</strong>
+          </div>
+        `;
+
+        // 증거 조사실 열기 및 부드러운 스크롤 이동
+        const invZone = document.getElementById("investigation");
+        invZone.classList.add("show");
+
+        setTimeout(() => {
+          invZone.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 200);
+      }
+    }
+
+    /* 2. 증거 개별 조사 클릭 */
+    function investigate(number) {
+      if (investigated[number - 1]) return;
+
+      investigated[number - 1] = true;
+
+      // 해당 증거 결과 노출
+      const res = document.getElementById("evidence" + number);
+      res.classList.add("show");
+
+      // 버튼 상태 업데이트
+      const btn = res.parentElement.querySelector(".inspect-btn");
+      btn.innerHTML = "✅ 감식 완료";
+      btn.disabled = true;
+
+      updateProgress();
+    }
+
+    /* 3. 진행률 바 갱신 및 4개 완료 시 암호창 열기 */
+    function updateProgress() {
+      const count = investigated.filter(Boolean).length;
+      const percentage = (count / 4) * 100;
+
+      document.getElementById("progressBar").style.width = percentage + "%";
+      document.getElementById("progressText").innerText = `조사한 단서 ${count} / 4`;
+
+      // 4개 조사 완료 즉시 암호 입력창 등장
+      if (count === 4) {
+        const passArea = document.getElementById("passwordArea");
+        passArea.classList.add("show");
+
+        setTimeout(() => {
+          passArea.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 400);
+      }
+    }
+
+    /* 4. 최종 암호 판정 및 1~10 난수 코인 지급 */
+    function checkPassword() {
+      const input = document.getElementById("passwordInput").value.trim();
+      const message = document.getElementById("passwordMessage");
+
+      if (input === CASE_PASSWORD) {
+        // 1 ~ 10 사이 알피 코인 랜덤 추첨
+        const coin = Math.floor(Math.random() * 10) + 1;
+
+        // localStorage 저장 (retro_hub.html 연동용)
+        localStorage.setItem("case5_solved", "true");
+        localStorage.setItem("case5_coin", coin);
+
+        message.innerHTML = `<span style="color:#2ecc71;">✅ 정답입니다! 수사 암호가 확인되었습니다.</span>`;
+
+        setTimeout(() => {
+          document.getElementById("passwordArea").style.display = "none";
+          const successBox = document.getElementById("success");
+          successBox.classList.add("show");
+          document.getElementById("coinText").innerText = `+${coin} ALP`;
+
+          successBox.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 600);
+      } else {
+        message.innerHTML = `<span style="color:#ff6b6b;">❌ 암호가 일치하지 않습니다. 활동지 문항을 다시 확인해 보세요.</span>`;
+      }
+    }
+
+    /* 5. 메인 학교 맵 복귀 */
+    function goMap() {
+      window.location.href = "retro_hub.html";
+    }
+  </script>
+</body>
+</html>
