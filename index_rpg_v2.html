@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 윤리 수사본부 - 학교 미스터리 RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--cyan:#00e5ff;--blue:#38bdf8;--gold:#ffd700;--green:#10b981;--red:#ef4444;--ink:#07101c}
+body{
+  font-family:'Pretendard',"Noto Sans KR",sans-serif;
+  min-height:100vh;color:#e6f1ff;background:#07101c;
+  padding:14px;user-select:none;
+}
+.app{width:min(1280px,100%);margin:auto;display:flex;flex-direction:column;gap:12px}
+.hud{
+  background:rgba(9,18,32,.97);border:2px solid #284665;border-radius:16px;
+  padding:14px 18px;box-shadow:0 10px 30px #0008
+}
+.hud-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.title{font-size:clamp(1.15rem,2.4vw,1.65rem);font-weight:900}
+.title b{color:var(--cyan)}
+.student{padding:7px 12px;border:1px solid #3b82f6;border-radius:9px;background:#17263a;color:#b8d7ff;font-weight:800}
+.hud-mid{display:grid;grid-template-columns:1.5fr .7fr;gap:10px;margin-top:10px}
+.box{background:#050b14;border:1px solid #1c324b;border-radius:10px;padding:10px 13px}
+.label{display:flex;justify-content:space-between;font-size:.83rem;color:#9eb2ca;font-weight:800;margin-bottom:5px}
+.track{height:11px;background:#15243a;border-radius:20px;overflow:hidden}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),#3b82f6);transition:.4s}
+.coin{font-size:1.35rem;color:var(--gold);font-weight:900}
+.codes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.codes-title{font-size:.8rem;color:var(--blue);font-weight:900;margin-right:3px}
+.chip{font-size:.78rem;padding:4px 8px;border-radius:6px;background:#142238;color:#536c88;border:1px dashed #31445d;font-weight:900}
+.chip.collected{background:#00e5ff20;color:var(--cyan);border:1px solid var(--cyan);box-shadow:0 0 8px #00e5ff40}
+
+.game-shell{
+  position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:18px;
+  border:3px solid #315878;background:#142333;box-shadow:0 16px 45px #000a;
+}
+.world{
+  position:absolute;inset:0;
+  background-image:url("assets/backgrounds/school-map.png");
+  background-size:100% 100%;background-position:center;background-repeat:no-repeat;
+}
+.world:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 50px #0005}
+.room-label{
+  position:absolute;transform:translate(-50%,-50%);z-index:12;
+  padding:5px 9px;border-radius:9px;background:#07101ddd;border:1px solid #ffffff42;
+  color:white;font-size:clamp(.55rem,1vw,.82rem);font-weight:900;white-space:nowrap;
+  box-shadow:0 3px 12px #0007;pointer-events:none
+}
+.room-label.active{border-color:var(--red);box-shadow:0 0 15px #ef4444aa}
+.room-label.solved{border-color:var(--green);color:#b8ffe3}
+.room-label.locked{opacity:.65;color:#9aa9ba}
+.npc{
+  position:absolute;z-index:20;transform:translate(-50%,-100%);
+  width:clamp(54px,7.1vw,100px);cursor:pointer;transition:filter .2s,transform .2s;
+  filter:drop-shadow(0 7px 5px #0008)
+}
+.npc:hover{transform:translate(-50%,-100%) scale(1.06)}
+.npc img{display:block;width:100%;height:auto;max-height:150px;object-fit:contain}
+.npc-bubble{
+  position:absolute;left:50%;top:-25px;transform:translateX(-50%);
+  background:#07101ee8;border:2px solid var(--cyan);border-radius:12px;
+  padding:3px 8px;font-size:clamp(.55rem,.9vw,.75rem);font-weight:900;white-space:nowrap;
+  box-shadow:0 0 12px #00e5ff66
+}
+.npc.locked{filter:grayscale(.75) brightness(.72) drop-shadow(0 7px 5px #0008)}
+.npc.locked .npc-bubble{border-color:#64748b;color:#a8b2bf}
+.npc.solved .npc-bubble{border-color:var(--green);color:#a7f3d0}
+.player{
+  position:absolute;z-index:30;left:50%;top:55%;width:clamp(52px,6.4vw,88px);
+  transform:translate(-50%,-88%);filter:drop-shadow(0 8px 5px #0009);
+  transition:left .06s linear,top .06s linear;pointer-events:none
+}
+.player img{width:100%;display:block;max-height:145px;object-fit:contain}
+.player.walking img{animation:bob .25s infinite alternate}
+@keyframes bob{to{transform:translateY(-3px)}}
+.interact{
+  position:absolute;z-index:45;left:50%;bottom:3%;transform:translateX(-50%);
+  padding:8px 15px;border-radius:20px;background:#06101de8;border:2px solid var(--cyan);
+  font-weight:900;font-size:clamp(.7rem,1.2vw,.95rem);box-shadow:0 0 18px #00e5ff55;
+  display:none;white-space:nowrap
+}
+.interact.show{display:block;animation:pulse 1s infinite alternate}
+@keyframes pulse{to{transform:translateX(-50%) scale(1.04)}}
+
+.guide{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  background:#0b1727;border:1px solid #29445f;border-radius:13px;padding:10px 14px;color:#c9d6e5;
+  font-size:.9rem
+}
+.guide strong{color:var(--cyan)}
+.dpad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,34px);gap:4px}
+.dbtn{border:1px solid #52677d;background:#17263a;color:white;border-radius:7px;font-weight:900;cursor:pointer}
+.dbtn:active{background:var(--cyan);color:#07101c}
+
+/* RPG dialogue */
+.dialogue-backdrop{
+  position:fixed;inset:0;background:#0007;z-index:100;display:none;align-items:flex-end;justify-content:center;
+  padding:22px
+}
+.dialogue-backdrop.show{display:flex}
+.dialogue{
+  width:min(1040px,96vw);min-height:260px;background:linear-gradient(180deg,#102238,#081321);
+  border:3px solid #75d8ff;border-radius:18px;padding:0;
+  box-shadow:0 0 0 4px #07101c,0 20px 70px #000d;position:relative;
+  display:grid;grid-template-columns:220px 1fr;overflow:visible
+}
+.dialogue-portrait{
+  position:relative;min-height:260px;align-self:stretch;overflow:visible;
+  display:flex;align-items:flex-end;justify-content:center;
+  background:radial-gradient(circle at 50% 75%,#17395b99 0,#0a172700 68%);
+}
+.dialogue-portrait img{
+  width:210px;height:300px;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 10px 8px #0009);transform:translateY(10px)
+}
+.dialogue-main{padding:20px 22px 16px;min-width:0}
+.speaker{display:inline-block;background:#e9f7ff;color:#0b2841;font-weight:900;padding:6px 14px;border-radius:9px;margin-bottom:10px}
+.dialogue-text{font-size:clamp(1rem,1.8vw,1.22rem);line-height:1.75;min-height:105px;color:#f2f8ff;word-break:keep-all}
+.dialogue-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:10px}
+.action{border:0;border-radius:10px;padding:10px 15px;font-size:.95rem;font-weight:900;cursor:pointer}
+.next{background:#38bdf8;color:#06111d}
+.enter{background:linear-gradient(90deg,#ef4444,#f97316);color:white}
+.close{background:#26384c;color:#d6e2ee}
+.dialogue-hint{position:absolute;right:18px;top:14px;font-size:.72rem;color:#7e9ab4}
+
+/* Finale */
+.modal{position:fixed;inset:0;background:#02060ddc;z-index:150;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.grand{width:min(680px,100%);max-height:92vh;overflow:auto;background:#09111e;border:3px solid var(--gold);border-radius:22px;padding:25px;text-align:center}
+.certificate{background:radial-gradient(circle,#17243d,#080d17);border:3px double var(--gold);border-radius:16px;padding:24px 18px;margin:16px 0}
+.medals{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:17px 0}
+.medal{border:1px solid var(--gold);border-radius:8px;padding:7px 2px;font-size:.78rem}
+.medal span{display:block;font-size:1.4rem}
+.final-btn{width:100%;border:0;border-radius:10px;padding:13px;margin-top:8px;font-weight:900;cursor:pointer}
+.padlet{background:linear-gradient(90deg,#ec4899,#8b5cf6,#00e5ff);color:white}
+.save{background:#1e293b;color:#38bdf8;border:1px solid #38bdf8}
+.back{background:#253448;color:#d8e3ee}
+
+@media(max-width:700px){
+  body{padding:7px}.hud{padding:10px}.hud-mid{grid-template-columns:1fr}
+  .game-shell{aspect-ratio:16/10}.guide{font-size:.76rem}.medals{grid-template-columns:repeat(3,1fr)}
+  .dialogue-backdrop{padding:10px}
+  .dialogue{grid-template-columns:125px 1fr;min-height:205px}
+  .dialogue-portrait{min-height:205px}
+  .dialogue-portrait img{width:135px;height:220px}
+  .dialogue-main{padding:16px 14px 12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hud">
+  <div class="hud-top">
+    <div class="title">🕵️ <b>AI 윤리 수사본부</b> · 학교 사건 현장</div>
+    <div class="student" id="studentBadge">수사관 정보 로딩 중...</div>
+  </div>
+  <div class="hud-mid">
+    <div class="box">
+      <div class="label"><span>학교 구역 수사 진척도</span><strong id="progressRatioText">0 / 6 해결</strong></div>
+      <div class="track"><div class="fill" id="progressBarFill"></div></div>
+    </div>
+    <div class="box">
+      <div class="label"><span>보유 알피(ALP) 코인</span><span>GAS 자동 기록</span></div>
+      <div class="coin">🪙 <span id="totalCoinText">0</span> <small>ALP</small></div>
+    </div>
+  </div>
+  <div class="codes">
+    <span class="codes-title">🔐 확보한 윤리 덕목 암호</span>
+    <span class="chip" id="chip1">① 검증</span><span class="chip" id="chip2">② 공정</span>
+    <span class="chip" id="chip3">③ 판단</span><span class="chip" id="chip4">④ 존중</span>
+    <span class="chip" id="chip5">⑤ 보호</span><span class="chip" id="chip6">⑥ 책임</span>
+  </div>
+</header>
+
+<main class="game-shell" id="gameShell">
+  <div class="world" id="world">
+    <div class="room-label" data-case="1" style="left:17%;top:7%">📚 도서관 · CASE 01</div>
+    <div class="room-label" data-case="2" style="left:50%;top:7%">🏫 6학년 교실 · CASE 02</div>
+    <div class="room-label" data-case="3" style="left:83%;top:7%">📝 문예실 · CASE 03</div>
+    <div class="room-label" data-case="4" style="left:17%;top:61%">📺 방송실 · CASE 04</div>
+    <div class="room-label" data-case="5" style="left:50%;top:61%">💻 컴퓨터실 · CASE 05</div>
+    <div class="room-label" data-case="6" style="left:83%;top:61%">🎨 미술실 · CASE 06</div>
+
+    <div class="npc" data-case="1" style="left:17%;top:36%"><div class="npc-bubble">!</div><img src="assets/characters/librarian.png" alt="사서 선생님"></div>
+    <div class="npc" data-case="2" style="left:50%;top:36%"><div class="npc-bubble">🔒</div><img src="assets/characters/jisoo.png" alt="이지수"></div>
+    <div class="npc" data-case="3" style="left:83%;top:36%"><div class="npc-bubble">🔒</div><img src="assets/characters/judge.png" alt="심사위원"></div>
+    <div class="npc" data-case="4" style="left:17%;top:88%"><div class="npc-bubble">🔒</div><img src="assets/characters/sosim.png" alt="민소심"></div>
+    <div class="npc" data-case="5" style="left:50%;top:88%"><div class="npc-bubble">🔒</div><img src="assets/characters/nagongyu.png" alt="나공유"></div>
+    <div class="npc" data-case="6" style="left:83%;top:88%"><div class="npc-bubble">🔒</div><img src="assets/characters/nattalkkak.png" alt="나딸깍"></div>
+
+    <div class="player" id="player"><img src="assets/characters/player.png" alt="학생 수사관"></div>
+    <div class="interact" id="interact">💬 SPACE : 대화하기</div>
+  </div>
+</main>
+
+<footer class="guide">
+  <div><strong>🎮 이동</strong> 방향키 / WASD &nbsp; · &nbsp; <strong>💬 대화</strong> NPC 가까이에서 SPACE &nbsp; · &nbsp; NPC를 직접 클릭해도 됩니다.</div>
+  <div class="dpad">
+    <div></div><button class="dbtn" data-move="up">▲</button><div></div>
+    <button class="dbtn" data-move="left">◀</button><button class="dbtn" data-move="down">▼</button><button class="dbtn" data-move="right">▶</button>
+  </div>
+</footer>
+</div>
+
+<div class="dialogue-backdrop" id="dialogueBackdrop">
+  <div class="dialogue">
+    <div class="dialogue-portrait">
+      <img id="dialoguePortrait" src="" alt="">
+    </div>
+    <div class="dialogue-main">
+      <div class="dialogue-hint">SPACE / ENTER로 다음</div>
+      <div class="speaker" id="speakerName">NPC</div>
+      <div class="dialogue-text" id="dialogueText"></div>
+      <div class="dialogue-actions" id="dialogueActions"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="grandFinaleModal">
+  <div class="grand">
+    <div style="font-size:3rem">🎉</div>
+    <h2 style="color:#ffd700">전 사건 완전 해결 축하!</h2>
+    <p style="margin-top:7px;color:#dbe7f4">6대 학교 미스터리를 모두 해결하고 AI 윤리 수사를 완수했습니다.</p>
+    <div class="certificate" id="certificateArea">
+      <div style="font-size:.8rem;color:#ffd700;font-weight:900;letter-spacing:2px">CERTIFICATE OF HONOR</div>
+      <h3 style="font-size:1.55rem;margin:7px 0">1급 AI 윤리 마스터 수사관 임명장</h3>
+      <p id="certStudentName" style="color:#93c5fd;font-weight:800">수사관</p>
+      <p style="font-size:.9rem;line-height:1.65;margin:13px auto;max-width:540px;color:#d1dcea">
+        위 학생은 거짓에 속지 않는 <b>검증</b>, 편견을 거부하는 <b>공정</b>, 기계에 의존하지 않는 <b>판단</b>,
+        타인을 배려하는 <b>존중</b>, 사생활을 지키는 <b>보호</b>, 창작자를 위하는 <b>책임</b>을 실천하였기에
+        마스터 수사관으로 임명합니다.
+      </p>
+      <div class="medals">
+        <div class="medal"><span>📚</span>검증</div><div class="medal"><span>🗳️</span>공정</div>
+        <div class="medal"><span>📝</span>판단</div><div class="medal"><span>🎙️</span>존중</div>
+        <div class="medal"><span>💻</span>보호</div><div class="medal"><span>🎨</span>책임</div>
+      </div>
+      <div style="border-top:1px dashed #ffd700;padding-top:10px;color:#ffd700">🪙 최종 획득 코인: <b id="certCoinTotal">0</b> ALP</div>
+    </div>
+    <button class="final-btn save" onclick="downloadCertificate()">📸 내 임명장 이미지로 저장하기</button>
+    <button class="final-btn padlet" onclick="goToPadlet()">🌟 활동 3: AI 윤리 실천 다짐 작성하러 가기</button>
+    <button class="final-btn back" onclick="closeGrandModal()">학교 맵으로 돌아가기</button>
+  </div>
+</div>
+
+<script>
+const GAS_API_URL="https://script.google.com/macros/s/AKfycbyDQO0DBKPXfdUqaUiIqsg5yC7HIMcOu--Uu6dGJYl5jHyQA5nafP5FVqoqpLti-iyy/exec";
+const PADLET_URL="https://padlet.com/ksr12161216/ai-s023nzr1pi2xstlc0cmi";
+
+const CASES=[
+ {caseNum:1,file:"case1.html",solvedKey:"case1_solved",coinKey:"case1_coin",codeword:"검증",speaker:"사서 선생님",portrait:"assets/characters/librarian.png",
+  dialogue:[
+   "수사관, 마침 잘 왔구나. 도서관에서 아주 이상한 일이 생겼단다.",
+   "한 학생이 책을 찾으러 왔는데, 제목도 있고 작가 이름도 있고 ISBN까지 아주 그럴듯하게 적혀 있었어.",
+   "그런데 아무리 찾아도 그 책이 보이지 않는구나. 정말 존재하는 책인지조차 확신하기 어렵단다.",
+   "이 책의 정체를 직접 확인해 줄 수 있겠니?"
+  ]},
+ {caseNum:2,file:"case2.html",solvedKey:"case2_solved",coinKey:"case2_coin",codeword:"공정",speaker:"이지수",portrait:"assets/characters/jisoo.png",
+  dialogue:[
+   "수사관! 나 좀 도와줘. 아무리 봐도 이상한 일이 생겼어.",
+   "나와 다른 후보의 활동 기록을 비교해 봤는데, 조건은 거의 똑같아.",
+   "그런데 AI가 매긴 점수는 내 점수만 훨씬 낮게 나왔어.",
+   "왜 이런 결과가 나온 건지 함께 조사해 줄래?"
+  ]},
+ {caseNum:3,file:"case3.html",solvedKey:"case3_solved",coinKey:"case3_coin",codeword:"판단",speaker:"심사위원",portrait:"assets/characters/judge.png",
+  dialogue:[
+   "수사관, 글짓기 대회에서 이해하기 어려운 일이 벌어졌습니다.",
+   "제출된 글만 보면 초등학생이라고 믿기 어려울 만큼 훌륭해서 높은 평가를 받았지요.",
+   "그런데 발표와 질문 시간이 되자, 그 학생은 자신이 제출한 글의 내용을 제대로 설명하지 못했습니다.",
+   "도대체 이 글에는 무슨 일이 있었던 걸까요? 확인해 주시겠습니까?"
+  ]},
+ {caseNum:4,file:"case4.html",solvedKey:"case4_solved",coinKey:"case4_coin",codeword:"존중",speaker:"민소심",portrait:"assets/characters/sosim.png",
+  dialogue:[
+   "수사관… 혹시 잠깐 이야기해도 될까?",
+   "친구들이 보고 있는 영상에 내 얼굴이랑 목소리가 나오는데… 나는 그런 영상을 찍은 적이 없어.",
+   "사람들은 진짜 나라고 생각하는 것 같아. 너무 당황스럽고 무서워.",
+   "도대체 누가, 어떻게 이런 영상을 만든 건지 알아봐 줄래?"
+  ]},
+ {caseNum:5,file:"case5.html",solvedKey:"case5_solved",coinKey:"case5_coin",codeword:"보호",speaker:"나공유",portrait:"assets/characters/nagongyu.png",
+  dialogue:[
+   "수사관, 큰일 났어! 누군가 나에 대해 너무 많은 걸 알고 있어.",
+   "내가 어디에 다니는지, 평소 어디로 움직이는지까지 아는 것 같아.",
+   "나는 그런 정보를 한꺼번에 알려준 기억이 없는데… 어떻게 알게 된 거지?",
+   "내 정보가 어디서 새어나간 건지 같이 추적해 줘!"
+  ]},
+ {caseNum:6,file:"case6.html",solvedKey:"case6_solved",coinKey:"case6_coin",codeword:"책임",speaker:"나딸깍",portrait:"assets/characters/nattalkkak.png",
+  dialogue:[
+   "수사관, 이게 왜 문제가 되는지 난 정말 모르겠어.",
+   "내가 직접 붓으로 그린 것도 아니고, 컴퓨터가 만들어 준 그림이잖아?",
+   "그런데 어떤 사람들은 내 작품에 문제가 있다고 하고, 다른 사람의 것을 훔친 거나 마찬가지라고 말해.",
+   "컴퓨터가 그린 그림인데 왜 그런 말을 하는 걸까? 직접 조사해 봐!"
+  ]}
+];
+
+let px=50,py=55,nearCase=null,currentCase=null,dialogueIndex=0,dialogueOpen=false;
+const SPEED=2.15;
+const npcPositions={1:[17,36],2:[50,36],3:[83,36],4:[17,88],5:[50,88],6:[83,88]};
+
+document.addEventListener("DOMContentLoaded",()=>{
+ initStudentInfo(); syncStateAndHUD(); updatePlayer(); setupControls(); setupNPCClicks(); checkGrandFinale();
+ window.addEventListener("resize",checkProximity);
+});
+
+function initStudentInfo(){
+ const grade=localStorage.getItem("student_grade")||"6";
+ const cls=localStorage.getItem("student_class")||"1";
+ const num=localStorage.getItem("student_number")||"";
+ const name=localStorage.getItem("student_name")||"수사관";
+ document.getElementById("studentBadge").innerHTML=`👤 ${grade}학년 ${cls}반 ${num?num+"번 ":""}<strong>${name}</strong> 수사관`;
+ document.getElementById("certStudentName").textContent=`수사관: ${grade}학년 ${cls}반 ${name}`;
+}
+
+function stateFor(c){
+ const solved=localStorage.getItem(c.solvedKey)==="true";
+ const locked=c.caseNum>1 && localStorage.getItem(`case${c.caseNum-1}_solved`)!=="true";
+ return {solved,locked};
+}
+
+function syncStateAndHUD(){
+ let solvedCount=0,total=0;
+ CASES.forEach(c=>{
+  const {solved,locked}=stateFor(c);
+  if(solved){solvedCount++;total+=parseInt(localStorage.getItem(c.coinKey)||"0",10)}
+  document.getElementById("chip"+c.caseNum).classList.toggle("collected",solved);
+  const npc=document.querySelector(`.npc[data-case="${c.caseNum}"]`);
+  const label=document.querySelector(`.room-label[data-case="${c.caseNum}"]`);
+  npc.classList.remove("locked","solved");label.classList.remove("locked","solved","active");
+  const bubble=npc.querySelector(".npc-bubble");
+  if(solved){npc.classList.add("solved");label.classList.add("solved");bubble.textContent="✓ 해결"}
+  else if(locked){npc.classList.add("locked");label.classList.add("locked");bubble.textContent="🔒"}
+  else{label.classList.add("active");bubble.textContent="! 사건"}
+ });
+ document.getElementById("progressRatioText").textContent=`${solvedCount} / 6 해결`;
+ document.getElementById("totalCoinText").textContent=total;
+ document.getElementById("certCoinTotal").textContent=total;
+ document.getElementById("progressBarFill").style.width=((solvedCount/6)*100)+"%";
+ reportToGoogleSheet(solvedCount,total);
+ checkProximity();
+}
+
+function updatePlayer(){
+ const p=document.getElementById("player");p.style.left=px+"%";p.style.top=py+"%";checkProximity();
+}
+function move(dx,dy){
+ if(dialogueOpen)return;
+ px=Math.max(4,Math.min(96,px+dx*SPEED));
+ py=Math.max(22,Math.min(94,py+dy*SPEED));
+ const p=document.getElementById("player");p.classList.add("walking");updatePlayer();
+ clearTimeout(move._t);move._t=setTimeout(()=>p.classList.remove("walking"),120);
+}
+function checkProximity(){
+ let best=null,bestD=999;
+ CASES.forEach(c=>{
+  const [x,y]=npcPositions[c.caseNum];
+  const dx=(px-x)*1.15,dy=py-y,d=Math.hypot(dx,dy);
+  if(d<bestD){bestD=d;best=c}
+ });
+ nearCase=bestD<15?best:null;
+ const prompt=document.getElementById("interact");
+ if(nearCase){prompt.textContent=`💬 SPACE : ${nearCase.speaker}와 대화하기`;prompt.classList.add("show")}
+ else prompt.classList.remove("show");
+}
+function setupControls(){
+ window.addEventListener("keydown",e=>{
+  if(dialogueOpen){
+   if((e.key===" "||e.key==="Enter")&&!e.repeat){e.preventDefault();advanceDialogue()}
+   if(e.key==="Escape")closeDialogue();
+   return;
+  }
+  let used=true;
+  if(e.key==="ArrowUp"||e.key==="w"||e.key==="W")move(0,-1);
+  else if(e.key==="ArrowDown"||e.key==="s"||e.key==="S")move(0,1);
+  else if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")move(-1,0);
+  else if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")move(1,0);
+  else if(e.key===" "&&nearCase){openDialogue(nearCase)}
+  else used=false;
+  if(used)e.preventDefault();
+ });
+ document.querySelectorAll(".dbtn").forEach(b=>{
+  const dir=b.dataset.move,fn=()=>({up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir]);
+  b.addEventListener("click",()=>{const [x,y]=fn();move(x,y)});
+ });
+}
+function setupNPCClicks(){
+ document.querySelectorAll(".npc").forEach(el=>{
+  el.addEventListener("click",()=>openDialogue(CASES.find(c=>c.caseNum===+el.dataset.case)));
+ });
+}
+function openDialogue(c){
+ currentCase=c;dialogueIndex=0;dialogueOpen=true;
+ document.getElementById("dialogueBackdrop").classList.add("show");
+ renderDialogue();
+}
+function renderDialogue(){
+ const c=currentCase,{solved,locked}=stateFor(c);
+ const speaker=document.getElementById("speakerName"),text=document.getElementById("dialogueText"),actions=document.getElementById("dialogueActions");
+ speaker.textContent=c.speaker;
+ const portrait=document.getElementById("dialoguePortrait");
+ portrait.src=c.portrait;portrait.alt=c.speaker;
+ actions.innerHTML="";
+ if(locked){
+  text.innerHTML=`🔒 <b>아직 조사할 수 없는 사건입니다.</b><br>먼저 CASE 0${c.caseNum-1} 사건을 해결하면 이 구역의 수사가 열립니다.`;
+  actions.innerHTML='<button class="action close" onclick="closeDialogue()">알겠어요</button>';return;
+ }
+ if(solved && dialogueIndex===0){
+  text.innerHTML=`✅ 이 사건은 이미 해결되었습니다.<br>획득 ALP: <b>${localStorage.getItem(c.coinKey)||0}</b> · 윤리 덕목: <b>『${c.codeword}』</b><br>원한다면 사건을 다시 살펴볼 수 있습니다.`;
+  actions.innerHTML=`<button class="action close" onclick="closeDialogue()">돌아가기</button><button class="action next" onclick="showSolvedDialogue()">NPC와 다시 대화</button><button class="action enter" onclick="enterCase()">🔍 복습 및 재조사</button>`;return;
+ }
+ const lines=c.dialogue;
+ text.textContent=lines[dialogueIndex];
+ if(dialogueIndex<lines.length-1)actions.innerHTML='<button class="action close" onclick="closeDialogue()">대화 종료</button><button class="action next" onclick="advanceDialogue()">다음 ▶</button>';
+ else actions.innerHTML='<button class="action close" onclick="closeDialogue()">아직 준비가 안 됐어요</button><button class="action enter" onclick="enterCase()">🔍 사건 수사 시작</button>';
+}
+function showSolvedDialogue(){dialogueIndex=0;document.getElementById("dialogueText").textContent=currentCase.dialogue[0];document.getElementById("dialogueActions").innerHTML='<button class="action next" onclick="advanceDialogue()">다음 ▶</button>'}
+function advanceDialogue(){
+ if(!currentCase)return;
+ const {locked,solved}=stateFor(currentCase);if(locked)return;
+ if(solved && document.getElementById("dialogueText").textContent.includes("이미 해결")){showSolvedDialogue();return}
+ if(dialogueIndex<currentCase.dialogue.length-1){dialogueIndex++;renderDialogue()}
+}
+function closeDialogue(){dialogueOpen=false;currentCase=null;document.getElementById("dialogueBackdrop").classList.remove("show")}
+function enterCase(){if(currentCase)window.location.href=currentCase.file}
+
+function checkGrandFinale(){
+ if(CASES.every(c=>localStorage.getItem(c.solvedKey)==="true")){
+  setTimeout(()=>showGrandFinale(),500);
+ }
+}
+function showGrandFinale(){
+ document.getElementById("grandFinaleModal").classList.add("show");
+ if(typeof confetti==="function"){
+  confetti({particleCount:120,spread:80,origin:{y:.6}});
+  setTimeout(()=>{confetti({particleCount:70,angle:60,spread:60,origin:{x:0}});confetti({particleCount:70,angle:120,spread:60,origin:{x:1}})},300);
+ }
+}
+function closeGrandModal(){document.getElementById("grandFinaleModal").classList.remove("show")}
+function downloadCertificate(){
+ const target=document.getElementById("certificateArea"),name=localStorage.getItem("student_name")||"수사관";
+ html2canvas(target,{backgroundColor:"#080c16",scale:2}).then(canvas=>{
+  const a=document.createElement("a");a.download=`AI윤리_마스터수사관_임명장_${name}.png`;a.href=canvas.toDataURL("image/png");a.click();
+ }).catch(()=>alert("이미지 저장 중 오류가 발생했습니다. 화면을 캡처해서 사용해 주세요!"));
+}
+function goToPadlet(){window.open(PADLET_URL,"_blank")}
+function reportToGoogleSheet(solvedCount,totalCoins){
+ if(!GAS_API_URL)return;
+ const payload={
+  grade:localStorage.getItem("student_grade")||"6",
+  classNum:localStorage.getItem("student_class")||"1",
+  studentNum:localStorage.getItem("student_number")||"",
+  studentName:localStorage.getItem("student_name")||"익명",
+  solvedCount,totalCoins,
+  case1_coin:localStorage.getItem("case1_coin")||0,case2_coin:localStorage.getItem("case2_coin")||0,
+  case3_coin:localStorage.getItem("case3_coin")||0,case4_coin:localStorage.getItem("case4_coin")||0,
+  case5_coin:localStorage.getItem("case5_coin")||0,case6_coin:localStorage.getItem("case6_coin")||0,
+  timestamp:new Date().toISOString()
+ };
+ fetch(GAS_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).catch(()=>{});
+}
+</script>
+</body>
+</html>
