@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI 윤리 수사본부 : 미스터리 스쿨</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  background:#07111f;
+  color:white;
+  overflow-x:hidden;
+}
+
+/* =========================
+   전체 게임
+========================= */
+
+#game{
+  width:min(1180px,100%);
+  margin:auto;
+  min-height:100vh;
+  background:#0b1626;
+  position:relative;
+}
+
+/* =========================
+   상단 HUD
+========================= */
+
+.hud{
+  min-height:82px;
+  background:rgba(5,13,25,.97);
+  border-bottom:3px solid #27d7ff;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+
+  padding:12px 22px;
+  position:relative;
+  z-index:50;
+}
+
+.hud-title{
+  font-size:21px;
+  font-weight:900;
+  color:#63e6ff;
+}
+
+.hud-sub{
+  font-size:12px;
+  color:#8faac2;
+  margin-top:4px;
+}
+
+.hud-info{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.hud-box{
+  background:#111f33;
+  border:1px solid #29435f;
+  border-radius:9px;
+  padding:9px 13px;
+  font-size:13px;
+}
+
+.coin{
+  color:#ffd54a;
+  font-weight:bold;
+}
+
+/* =========================
+   게임 월드
+========================= */
+
+.world{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  min-height:600px;
+
+  overflow:hidden;
+
+  /*
+  나중에 우리가 제작한 학교 RPG 맵으로 변경:
+  background-image:url("assets/backgrounds/school-map.webp");
+  */
+
+  background:
+    linear-gradient(
+      rgba(5,16,29,.10),
+      rgba(5,16,29,.22)
+    ),
+    #4c9b68;
+}
+
+/* 잔디 패턴 */
+
+.world::before{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background-image:
+    linear-gradient(
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    );
+
+  background-size:32px 32px;
+}
+
+/* =========================
+   학교 건물
+========================= */
+
+.school{
+  position:absolute;
+  left:20%;
+  top:9%;
+  width:60%;
+  height:31%;
+
+  background:#cbd5df;
+  border:8px solid #26384b;
+  border-radius:8px;
+
+  box-shadow:0 10px 0 #172434;
+}
+
+.school-title{
+  position:absolute;
+  width:100%;
+  top:10px;
+
+  text-align:center;
+  color:#1d3044;
+  font-weight:900;
+  font-size:18px;
+}
+
+.entrance{
+  position:absolute;
+  width:18%;
+  height:37%;
+
+  left:41%;
+  bottom:0;
+
+  background:#25394e;
+  border:5px solid #172434;
+}
+
+.window{
+  position:absolute;
+  width:10%;
+  height:18%;
+
+  background:#6dcce4;
+  border:4px solid #26384b;
+}
+
+.w1{left:8%;top:43%}
+.w2{left:24%;top:43%}
+.w3{right:24%;top:43%}
+.w4{right:8%;top:43%}
+
+/* =========================
+   길
+========================= */
+
+.road{
+  position:absolute;
+
+  left:43%;
+  top:39%;
+
+  width:14%;
+  height:61%;
+
+  background:#b7a788;
+
+  border-left:4px solid #8b7b60;
+  border-right:4px solid #8b7b60;
+}
+
+/* =========================
+   CASE 구역
+========================= */
+
+.case-zone{
+  position:absolute;
+
+  width:110px;
+  min-height:70px;
+
+  border:3px solid #314b60;
+  border-radius:12px;
+
+  background:#17283a;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  text-align:center;
+
+  box-shadow:0 6px 0 rgba(0,0,0,.3);
+
+  z-index:10;
+}
+
+.case-zone.active{
+  border-color:#ff5252;
+  box-shadow:
+    0 0 20px rgba(255,60,60,.7),
+    0 6px 0 rgba(0,0,0,.3);
+
+  animation:pulse 1.2s infinite alternate;
+}
+
+.case-zone.solved{
+  border-color:#37db8c;
+}
+
+.case-zone.locked{
+  filter:grayscale(1);
+  opacity:.55;
+}
+
+.case-number{
+  font-size:11px;
+  color:#7fdfff;
+  font-weight:bold;
+}
+
+.case-icon{
+  font-size:27px;
+  margin:3px;
+}
+
+.case-name{
+  font-size:12px;
+  font-weight:bold;
+}
+
+@keyframes pulse{
+  from{box-shadow:0 0 8px #ff5252}
+  to{box-shadow:0 0 25px #ff5252}
+}
+
+/* 사건 위치 */
+
+#case1{left:7%;top:16%}
+#case2{left:7%;top:48%}
+#case3{left:15%;bottom:8%}
+
+#case4{right:7%;top:16%}
+#case5{right:7%;top:48%}
+#case6{right:15%;bottom:8%}
+
+/* =========================
+   NPC
+========================= */
+
+.npc{
+  position:absolute;
+  z-index:20;
+
+  width:70px;
+
+  text-align:center;
+
+  transition:.2s;
+}
+
+.npc-character{
+  font-size:42px;
+
+  filter:
+    drop-shadow(0 5px 3px rgba(0,0,0,.4));
+}
+
+.npc-name{
+  display:inline-block;
+
+  background:rgba(4,12,22,.88);
+
+  border:1px solid #52d9ff;
+
+  padding:3px 7px;
+  border-radius:5px;
+
+  font-size:10px;
+  font-weight:bold;
+
+  margin-top:2px;
+}
+
+/* NPC 위치 */
+
+#npc1{left:18%;top:26%}
+#npc2{left:20%;top:52%}
+#npc3{left:25%;bottom:12%}
+
+#npc4{right:18%;top:26%}
+#npc5{right:20%;top:52%}
+#npc6{right:25%;bottom:12%}
+
+/* =========================
+   플레이어
+========================= */
+
+#player{
+  position:absolute;
+
+  left:48%;
+  top:69%;
+
+  width:60px;
+  height:60px;
+
+  z-index:30;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:43px;
+
+  filter:
+    drop-shadow(0 5px 4px rgba(0,0,0,.55));
+
+  transition:
+    left .12s linear,
+    top .12s linear;
+}
+
+/* =========================
+   상호작용 안내
+========================= */
+
+#interactionHint{
+  position:absolute;
+
+  left:50%;
+  bottom:20px;
+
+  transform:translateX(-50%);
+
+  background:rgba(3,9,18,.93);
+
+  border:2px solid #50ddff;
+
+  border-radius:8px;
+
+  padding:9px 18px;
+
+  font-size:13px;
+  font-weight:bold;
+
+  z-index:45;
+
+  display:none;
+}
+
+/* =========================
+   NPC 대화창
+========================= */
+
+.dialogue-overlay{
+  position:fixed;
+  inset:0;
+
+  background:rgba(0,0,0,.55);
+
+  display:none;
+
+  align-items:flex-end;
+  justify-content:center;
+
+  padding:30px;
+
+  z-index:100;
+}
+
+.dialogue-overlay.show{
+  display:flex;
+}
+
+.dialogue{
+  width:min(850px,96%);
+
+  background:#081525;
+
+  border:3px solid #51dfff;
+  border-radius:14px;
+
+  box-shadow:
+    0 0 35px rgba(32,199,255,.28);
+
+  padding:20px;
+
+  display:grid;
+  grid-template-columns:120px 1fr;
+
+  gap:18px;
+}
+
+/* NPC 초상화 */
+
+.npc-portrait{
+  min-height:125px;
+
+  background:#13263b;
+
+  border:2px solid #294e69;
+  border-radius:9px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:70px;
+}
+
+/* 대화 */
+
+.dialogue-name{
+  color:#54e1ff;
+  font-weight:900;
+  font-size:17px;
+
+  margin-bottom:8px;
+}
+
+.dialogue-text{
+  color:#e3edf7;
+  line-height:1.7;
+  font-size:15px;
+
+  min-height:70px;
+}
+
+.dialogue-buttons{
+  margin-top:13px;
+
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.dialogue-btn{
+  background:#152c43;
+
+  color:white;
+
+  border:1px solid #3e6685;
+
+  border-radius:7px;
+
+  padding:9px 14px;
+
+  cursor:pointer;
+
+  font-weight:bold;
+}
+
+.dialogue-btn:hover{
+  background:#1f4a69;
+}
+
+.dialogue-btn.start{
+  background:#e53d45;
+  border-color:#ff6970;
+}
+
+.dialogue-btn.start:hover{
+  background:#ff4d55;
+}
+
+/* =========================
+   하단 조작 설명
+========================= */
+
+.controlbar{
+  min-height:65px;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  gap:10px;
+
+  padding:12px 20px;
+
+  background:#07111f;
+
+  border-top:2px solid #263c53;
+
+  font-size:12px;
+  color:#aebed0;
+}
+
+.controlbar strong{
+  color:#55ddff;
+}
+
+.ethics{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+
+.ethic{
+  background:#111f30;
+  color:#536b81;
+
+  padding:5px 8px;
+
+  border-radius:5px;
+
+  font-size:11px;
+}
+
+.ethic.collected{
+  color:#5feaff;
+  border:1px solid #29c8ef;
+}
+
+/* =========================
+   모바일
+========================= */
+
+@media(max-width:750px){
+
+  .hud{
+    align-items:flex-start;
+  }
+
+  .hud-title{
+    font-size:16px;
+  }
+
+  .world{
+    min-height:650px;
+    aspect-ratio:auto;
+  }
+
+  .case-zone{
+    width:82px;
+  }
+
+  .dialogue{
+    grid-template-columns:75px 1fr;
+  }
+
+  .npc-portrait{
+    font-size:48px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+<!-- =========================
+     HUD
+========================= -->
+
+<header class="hud">
+
+  <div>
+    <div class="hud-title">
+      🕵️ AI 윤리 수사본부
+    </div>
+
+    <div class="hud-sub">
+      MYSTERY SCHOOL INVESTIGATION
+    </div>
+  </div>
+
+  <div class="hud-info">
+
+    <div class="hud-box" id="studentInfo">
+      👤 수사관
+    </div>
+
+    <div class="hud-box">
+      사건
+      <strong id="progressText">
+        0 / 6
+      </strong>
+    </div>
+
+    <div class="hud-box coin">
+      🪙
+      <span id="coinText">0</span>
+      ALP
+    </div>
+
+  </div>
+
+</header>
+
+
+<!-- =========================
+     게임 월드
+========================= -->
+
+<main class="world" id="world">
+
+  <!-- 학교 -->
+
+  <div class="school">
+
+    <div class="school-title">
+      AI 윤리 미스터리 스쿨
+    </div>
+
+    <div class="window w1"></div>
+    <div class="window w2"></div>
+    <div class="window w3"></div>
+    <div class="window w4"></div>
+
+    <div class="entrance"></div>
+
+  </div>
+
+  <div class="road"></div>
+
+
+  <!-- CASE -->
+
+  <div class="case-zone" id="case1">
+    <div class="case-number">CASE 01</div>
+    <div class="case-icon">📚</div>
+    <div class="case-name">도서관</div>
+  </div>
+
+  <div class="case-zone" id="case2">
+    <div class="case-number">CASE 02</div>
+    <div class="case-icon">🗳️</div>
+    <div class="case-name">교실</div>
+  </div>
+
+  <div class="case-zone" id="case3">
+    <div class="case-number">CASE 03</div>
+    <div class="case-icon">📝</div>
+    <div class="case-name">문예실</div>
+  </div>
+
+  <div class="case-zone" id="case4">
+    <div class="case-number">CASE 04</div>
+    <div class="case-icon">🎙️</div>
+    <div class="case-name">방송실</div>
+  </div>
+
+  <div class="case-zone" id="case5">
+    <div class="case-number">CASE 05</div>
+    <div class="case-icon">💻</div>
+    <div class="case-name">컴퓨터실</div>
+  </div>
+
+  <div class="case-zone" id="case6">
+    <div class="case-number">CASE 06</div>
+    <div class="case-icon">🎨</div>
+    <div class="case-name">미술실</div>
+  </div>
+
+
+  <!-- NPC -->
+
+  <div class="npc" id="npc1">
+    <div class="npc-character">👩‍🏫</div>
+    <div class="npc-name">도서관 사서</div>
+  </div>
+
+  <div class="npc" id="npc2">
+    <div class="npc-character">🧑‍🎓</div>
+    <div class="npc-name">선거관리 학생</div>
+  </div>
+
+  <div class="npc" id="npc3">
+    <div class="npc-character">👨‍🏫</div>
+    <div class="npc-name">국어 선생님</div>
+  </div>
+
+  <div class="npc" id="npc4">
+    <div class="npc-character">🧑‍💻</div>
+    <div class="npc-name">방송부원</div>
+  </div>
+
+  <div class="npc" id="npc5">
+    <div class="npc-character">👩‍💻</div>
+    <div class="npc-name">정보 선생님</div>
+  </div>
+
+  <div class="npc" id="npc6">
+    <div class="npc-character">👩‍🎨</div>
+    <div class="npc-name">미술부원</div>
+  </div>
+
+
+  <!-- 플레이어 -->
+
+  <div id="player">
+    🕵️
+  </div>
+
+
+  <div id="interactionHint">
+    💬 NPC와 대화하려면
+    <strong>SPACE</strong>
+  </div>
+
+</main>
+
+
+<!-- =========================
+     하단
+========================= -->
+
+<footer class="controlbar">
+
+  <div>
+    🎮 <strong>WASD / 방향키</strong> 이동
+    &nbsp;·&nbsp;
+    💬 <strong>SPACE</strong> 대화
+  </div>
+
+  <div class="ethics">
+
+    <span class="ethic" id="ethic1">
+      검증
+    </span>
+
+    <span class="ethic" id="ethic2">
+      공정
+    </span>
+
+    <span class="ethic" id="ethic3">
+      판단
+    </span>
+
+    <span class="ethic" id="ethic4">
+      존중
+    </span>
+
+    <span class="ethic" id="ethic5">
+      보호
+    </span>
+
+    <span class="ethic" id="ethic6">
+      책임
+    </span>
+
+  </div>
+
+</footer>
+
+</div>
+
+
+<!-- =========================
+     NPC 대화창
+========================= -->
+
+<div class="dialogue-overlay" id="dialogueOverlay">
+
+  <div class="dialogue">
+
+    <div
+      class="npc-portrait"
+      id="dialoguePortrait">
+      👩‍🏫
+    </div>
+
+    <div>
+
+      <div
+        class="dialogue-name"
+        id="dialogueName">
+        NPC
+      </div>
+
+      <div
+        class="dialogue-text"
+        id="dialogueText">
+      </div>
+
+      <div class="dialogue-buttons">
+
+        <button
+          class="dialogue-btn"
+          onclick="nextDialogue()">
+          ▶ 계속
+        </button>
+
+        <button
+          class="dialogue-btn start"
+          id="startCaseBtn"
+          onclick="enterCase()">
+          🚨 사건 수사 시작
+        </button>
+
+        <button
+          class="dialogue-btn"
+          onclick="closeDialogue()">
+          대화 종료
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CASE 데이터
+===================================================== */
+
+const CASES = [
+
+{
+  num:1,
+  file:"case1.html",
+  solvedKey:"case1_solved",
+  coinKey:"case1_coin",
+  npc:"도서관 사서",
+  portrait:"👩‍🏫",
+  codeword:"검증",
+
+  dialogue:[
+    "수사관님! 마침 잘 오셨어요.",
+    "학생 한 명이 생성형 AI에게 책을 추천받았는데, 아무리 찾아도 그 책이 보이지 않아요.",
+    "AI는 저자와 출판사까지 아주 자세하게 알려줬다고 합니다.",
+    "정말 존재하는 책인지 함께 확인해 주시겠어요?"
+  ]
+},
+
+{
+  num:2,
+  file:"case2.html",
+  solvedKey:"case2_solved",
+  coinKey:"case2_coin",
+  npc:"선거관리 학생",
+  portrait:"🧑‍🎓",
+  codeword:"공정",
+
+  dialogue:[
+    "수사관님, 선거에서 이상한 일이 벌어졌어요.",
+    "AI가 특정 후보에게 불리한 판단을 내리고 있습니다.",
+    "알고리즘이 정말 공정하게 판단하고 있는지 조사해 주세요."
+  ]
+},
+
+{
+  num:3,
+  file:"case3.html",
+  solvedKey:"case3_solved",
+  coinKey:"case3_coin",
+  npc:"국어 선생님",
+  portrait:"👨‍🏫",
+  codeword:"판단",
+
+  dialogue:[
+    "요즘 학생들의 글에서 이상한 점이 발견되고 있습니다.",
+    "AI가 글 전체를 대신 작성하면서 학생 자신의 생각이 사라지고 있어요.",
+    "AI와 인간의 판단 사이에서 어떤 문제가 생긴 것인지 조사해 주세요."
+  ]
+},
+
+{
+  num:4,
+  file:"case4.html",
+  solvedKey:"case4_solved",
+  coinKey:"case4_coin",
+  npc:"방송부원",
+  portrait:"🧑‍💻",
+  codeword:"존중",
+
+  dialogue:[
+    "수사관님! 방송실에서 심각한 영상이 발견됐어요.",
+    "누군가 다른 사람의 얼굴과 목소리를 AI로 바꿔 영상을 만들었습니다.",
+    "동의 없이 만들어진 딥페이크 사건을 조사해 주세요."
+  ]
+},
+
+{
+  num:5,
+  file:"case5.html",
+  solvedKey:"case5_solved",
+  coinKey:"case5_coin",
+  npc:"정보 선생님",
+  portrait:"👩‍💻",
+  codeword:"보호",
+
+  dialogue:[
+    "학생의 개인정보가 외부로 유출된 흔적이 발견됐습니다.",
+    "챗봇에게 올린 사진과 정보가 문제의 시작인 것 같아요.",
+    "어떤 정보가 위험에 노출됐는지 찾아주세요."
+  ]
+},
+
+{
+  num:6,
+  file:"case6.html",
+  solvedKey:"case6_solved",
+  coinKey:"case6_coin",
+  npc:"미술부원",
+  portrait:"👩‍🎨",
+  codeword:"책임",
+
+  dialogue:[
+    "수사관님, 미술 공모전에서 문제가 발생했어요.",
+    "AI가 특정 작가의 화풍을 그대로 따라 만든 그림이 상을 받았습니다.",
+    "창작물과 AI의 책임에 대해 조사해 주세요."
+  ]
+}
+
+];
+
+
+/* =====================================================
+   플레이어
+===================================================== */
+
+const player =
+  document.getElementById("player");
+
+const world =
+  document.getElementById("world");
+
+let x = 48;
+let y = 69;
+
+let currentCase = null;
+let dialogueIndex = 0;
+
+const speed = 2.1;
+
+
+/* =====================================================
+   초기화
+===================================================== */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  ()=>{
+    loadStudent();
+    updateHUD();
+    updateCaseStates();
+    updatePlayer();
+  }
+);
+
+
+/* =====================================================
+   학생 정보
+===================================================== */
+
+function loadStudent(){
+
+  const grade =
+    localStorage.getItem("student_grade") || "6";
+
+  const cls =
+    localStorage.getItem("student_class") || "1";
+
+  const name =
+    localStorage.getItem("student_name") || "수사관";
+
+  document.getElementById(
+    "studentInfo"
+  ).innerText =
+    `👤 ${grade}학년 ${cls}반 ${name}`;
+
+}
+
+
+/* =====================================================
+   HUD
+===================================================== */
+
+function updateHUD(){
+
+  let solved = 0;
+  let coins = 0;
+
+  CASES.forEach(c=>{
+
+    const clear =
+      localStorage.getItem(
+        c.solvedKey
+      ) === "true";
+
+    if(clear){
+
+      solved++;
+
+      coins +=
+        parseInt(
+          localStorage.getItem(
+            c.coinKey
+          ) || "0"
+        );
+
+      document
+        .getElementById(
+          "ethic"+c.num
+        )
+        .classList
+        .add("collected");
+
+    }
+
+  });
+
+  document.getElementById(
+    "progressText"
+  ).innerText =
+    `${solved} / 6`;
+
+  document.getElementById(
+    "coinText"
+  ).innerText =
+    coins;
+
+}
+
+
+/* =====================================================
+   CASE 잠금
+===================================================== */
+
+function isLocked(c){
+
+  if(c.num === 1)
+    return false;
+
+  return (
+    localStorage.getItem(
+      `case${c.num-1}_solved`
+    ) !== "true"
+  );
+
+}
+
+
+function updateCaseStates(){
+
+  CASES.forEach(c=>{
+
+    const el =
+      document.getElementById(
+        "case"+c.num
+      );
+
+    el.classList.remove(
+      "active",
+      "solved",
+      "locked"
+    );
+
+    const solved =
+      localStorage.getItem(
+        c.solvedKey
+      ) === "true";
+
+    if(solved){
+
+      el.classList.add(
+        "solved"
+      );
+
+    }else if(isLocked(c)){
+
+      el.classList.add(
+        "locked"
+      );
+
+    }else{
+
+      el.classList.add(
+        "active"
+      );
+
+    }
+
+  });
+
+}
+
+
+/* =====================================================
+   이동
+===================================================== */
+
+function updatePlayer(){
+
+  player.style.left =
+    x+"%";
+
+  player.style.top =
+    y+"%";
+
+  checkNPC();
+
+}
+
+
+window.addEventListener(
+  "keydown",
+  e=>{
+
+    if(
+      document
+        .getElementById(
+          "dialogueOverlay"
+        )
+        .classList
+        .contains("show")
+    ){
+      return;
+    }
+
+    let moved = false;
+
+    if(
+      e.key==="ArrowUp" ||
+      e.key.toLowerCase()==="w"
+    ){
+      y-=speed;
+      moved=true;
+    }
+
+    if(
+      e.key==="ArrowDown" ||
+      e.key.toLowerCase()==="s"
+    ){
+      y+=speed;
+      moved=true;
+    }
+
+    if(
+      e.key==="ArrowLeft" ||
+      e.key.toLowerCase()==="a"
+    ){
+      x-=speed;
+      moved=true;
+    }
+
+    if(
+      e.key==="ArrowRight" ||
+      e.key.toLowerCase()==="d"
+    ){
+      x+=speed;
+      moved=true;
+    }
+
+    x=Math.max(
+      2,
+      Math.min(93,x)
+    );
+
+    y=Math.max(
+      4,
+      Math.min(88,y)
+    );
+
+    if(moved){
+
+      e.preventDefault();
+      updatePlayer();
+
+    }
+
+    if(
+      e.code==="Space"
+    ){
+
+      e.preventDefault();
+
+      if(currentCase)
+        openDialogue(
+          currentCase
+        );
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   NPC 접근 판정
+===================================================== */
+
+function checkNPC(){
+
+  currentCase = null;
+
+  let closest =
+    Infinity;
+
+  CASES.forEach(c=>{
+
+    const npc =
+      document.getElementById(
+        "npc"+c.num
+      );
+
+    const n =
+      npc.getBoundingClientRect();
+
+    const p =
+      player.getBoundingClientRect();
+
+    const dx =
+      (n.left+n.width/2) -
+      (p.left+p.width/2);
+
+    const dy =
+      (n.top+n.height/2) -
+      (p.top+p.height/2);
+
+    const distance =
+      Math.sqrt(
+        dx*dx+dy*dy
+      );
+
+    if(
+      distance < 115 &&
+      distance < closest
+    ){
+
+      closest =
+        distance;
+
+      currentCase =
+        c;
+
+    }
+
+  });
+
+  const hint =
+    document.getElementById(
+      "interactionHint"
+    );
+
+  hint.style.display =
+    currentCase
+    ? "block"
+    : "none";
+
+}
+
+
+/* =====================================================
+   NPC 대화
+===================================================== */
+
+function openDialogue(c){
+
+  dialogueIndex=0;
+
+  document.getElementById(
+    "dialogueName"
+  ).innerText =
+    c.npc;
+
+  document.getElementById(
+    "dialoguePortrait"
+  ).innerText =
+    c.portrait;
+
+  if(isLocked(c)){
+
+    document.getElementById(
+      "dialogueText"
+    ).innerHTML =
+      `🔒 아직 이 사건 구역에는 들어갈 수 없습니다.<br><br>
+      먼저 <strong>CASE ${String(c.num-1).padStart(2,"0")}</strong>을 해결하고 돌아오세요.`;
+
+    document.getElementById(
+      "startCaseBtn"
+    ).style.display="none";
+
+  }else{
+
+    showDialogueLine();
+
+  }
+
+  document.getElementById(
+    "dialogueOverlay"
+  ).classList.add(
+    "show"
+  );
+
+}
+
+
+function showDialogueLine(){
+
+  document.getElementById(
+    "dialogueText"
+  ).innerText =
+    currentCase.dialogue[
+      dialogueIndex
+    ];
+
+  document.getElementById(
+    "startCaseBtn"
+  ).style.display =
+    dialogueIndex ===
+    currentCase.dialogue.length-1
+    ? "inline-block"
+    : "none";
+
+}
+
+
+function nextDialogue(){
+
+  if(
+    isLocked(
+      currentCase
+    )
+  )
+    return;
+
+  if(
+    dialogueIndex <
+    currentCase.dialogue.length-1
+  ){
+
+    dialogueIndex++;
+    showDialogueLine();
+
+  }
+
+}
+
+
+function closeDialogue(){
+
+  document.getElementById(
+    "dialogueOverlay"
+  ).classList.remove(
+    "show"
+  );
+
+}
+
+
+/* =====================================================
+   CASE 입장
+===================================================== */
+
+function enterCase(){
+
+  if(
+    !currentCase ||
+    isLocked(currentCase)
+  )
+    return;
+
+  window.location.href =
+    currentCase.file;
+
+}
+
+</script>
+
+</body>
+</html>
